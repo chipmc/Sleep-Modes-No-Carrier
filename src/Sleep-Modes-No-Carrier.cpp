@@ -33,6 +33,9 @@ bool meterParticlePublish(void);
 int setDuration(String command);
 int setTestNumber(String command);
 #line 23 "/Users/chipmc/Documents/Maker/Particle/Utilities/Sleep-Modes-No-Carrier/src/Sleep-Modes-No-Carrier.ino"
+SYSTEM_MODE(SEMI_AUTOMATIC);
+SYSTEM_THREAD(ENABLED);
+
 char currentPointRelease[5] ="2.50";
 
 // Included Libraries
@@ -66,6 +69,8 @@ void setup() {
   Particle.function("Duration-Sec",setDuration);
   Particle.function("Select-Test",setTestNumber);
 
+  Particle.connect();
+
   testNumber = EEPROM.read(testNumberAddr);                       // Load values from EEPROM and bounds check (1st run will have random values)
   if (testNumber < 0 || testNumber > 3) testNumber = 0;
   
@@ -79,8 +84,10 @@ void loop() {
     clearedToTest = false;
     loadSleepConfig(testNumber);
     digitalWrite(blueLED,LOW);
+    Particle.disconnect();
     System.sleep(config);
     digitalWrite(blueLED,HIGH);
+    Particle.connect();
     waitUntil(meterParticlePublish);
     Particle.publish("Status","Test Complete - Select Next Test",PRIVATE);
   }
@@ -108,13 +115,12 @@ void loadSleepConfig(int testCase) {
           .duration(testDurationSeconds * 1000);
         break;
       case 2:
-        snprintf(preSleepMessage, sizeof(preSleepMessage),"Test 2: HIBERNATE mode sleep for %i seconds",testDurationSeconds);
+        snprintf(preSleepMessage, sizeof(preSleepMessage),"Test 2: HIBERNATE mode until you press the user button");
         waitUntil(meterParticlePublish);
         Particle.publish("Status",preSleepMessage,PRIVATE);
         delay(5000);
         config.mode(SystemSleepMode::HIBERNATE)
-          .gpio(userSwitch,FALLING)
-          .duration(testDurationSeconds * 1000);
+          .gpio(userSwitch,FALLING);
         break;
       case 3:
         snprintf(preSleepMessage, sizeof(preSleepMessage),"Test 3: ENABLE mode - Pull Enable Pin LOW");

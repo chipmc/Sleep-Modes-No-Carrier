@@ -20,6 +20,9 @@
 * v2.50 - Changed approach to support testing with the Coulomb Counter 
 */
 
+SYSTEM_MODE(SEMI_AUTOMATIC);
+SYSTEM_THREAD(ENABLED);
+
 char currentPointRelease[5] ="2.50";
 
 // Included Libraries
@@ -53,6 +56,8 @@ void setup() {
   Particle.function("Duration-Sec",setDuration);
   Particle.function("Select-Test",setTestNumber);
 
+  Particle.connect();
+
   testNumber = EEPROM.read(testNumberAddr);                       // Load values from EEPROM and bounds check (1st run will have random values)
   if (testNumber < 0 || testNumber > 3) testNumber = 0;
   
@@ -66,8 +71,10 @@ void loop() {
     clearedToTest = false;
     loadSleepConfig(testNumber);
     digitalWrite(blueLED,LOW);
+    Particle.disconnect();
     System.sleep(config);
     digitalWrite(blueLED,HIGH);
+    Particle.connect();
     waitUntil(meterParticlePublish);
     Particle.publish("Status","Test Complete - Select Next Test",PRIVATE);
   }
